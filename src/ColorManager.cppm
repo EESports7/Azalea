@@ -5,13 +5,13 @@ module;
 export module ColorManager;
 
 struct ColorKey {
-    static constexpr std::string_view Holding = "holding-color";
-    static constexpr std::string_view Release = "release-color";
-    static constexpr std::string_view Mixed = "mixed-color";
-    static constexpr std::string_view InnerHitbox = "inner-hitbox-color";
-    static constexpr std::string_view OuterHitbox = "outer-hitbox-color";
-    static constexpr std::string_view RotatedHitbox = "rotated-hitbox-color";
-    static constexpr std::string_view CircleHitbox = "circle-hitbox-color";
+    static constexpr auto Holding       = "holding-color"sv;
+    static constexpr auto Release       = "release-color"sv;
+    static constexpr auto Mixed         = "mixed-color"sv;
+    static constexpr auto InnerHitbox   = "inner-hitbox-color"sv;
+    static constexpr auto OuterHitbox   = "outer-hitbox-color"sv;
+    static constexpr auto RotatedHitbox = "rotated-hitbox-color"sv;
+    static constexpr auto CircleHitbox  = "circle-hitbox-color"sv;
 };
 
 export enum class ColorIdx {
@@ -49,13 +49,13 @@ public:
     void loadColors(){
         auto mod = Mod::get();
 
-        Holding = mod->getSettingValue<ccColor3B>(ColorKey::Holding);
-        Release = mod->getSettingValue<ccColor3B>(ColorKey::Release);
-        Mixed = mod->getSettingValue<ccColor3B>(ColorKey::Mixed);
-        InnerHitbox = mod->getSettingValue<ccColor3B>(ColorKey::InnerHitbox);
-        OuterHitbox = mod->getSettingValue<ccColor3B>(ColorKey::OuterHitbox);
+        Holding       = mod->getSettingValue<ccColor3B>(ColorKey::Holding);
+        Release       = mod->getSettingValue<ccColor3B>(ColorKey::Release);
+        Mixed         = mod->getSettingValue<ccColor3B>(ColorKey::Mixed);
+        InnerHitbox   = mod->getSettingValue<ccColor3B>(ColorKey::InnerHitbox);
+        OuterHitbox   = mod->getSettingValue<ccColor3B>(ColorKey::OuterHitbox);
         RotatedHitbox = mod->getSettingValue<ccColor3B>(ColorKey::RotatedHitbox);
-        CircleHitbox = mod->getSettingValue<ccColor3B>(ColorKey::CircleHitbox);
+        CircleHitbox  = mod->getSettingValue<ccColor3B>(ColorKey::CircleHitbox);
     }
 
     ccColor4F getColor(ColorIdx idx){
