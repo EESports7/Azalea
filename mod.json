@@ -11,9 +11,13 @@
 	"version": "v1.0.0-beta",
 	"developer": "EESports",
 	"description": "Advanced Player Trajectory Viewer",
+	"links": {
+		"source": "https://github.com/EESports7/Azalea"
+	},
 	"dependencies": {
 		"geode.node-ids": ">=v1.20.0"
 	},
+	"tags": ["gameplay", "offline", "utility", "cheat"],
 	"settings": {
 		"enable-trajectory": {
 			"type": "bool",
