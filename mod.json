@@ -1,0 +1,95 @@
+{
+	"geode": "5.4.1",
+	"gd": {
+		"win": "2.2081",
+		"android": "2.2081",
+		"mac": "2.2081",
+		"ios": "2.2081"
+	},
+	"id": "eesports.azalea",
+	"name": "Azalea",
+	"version": "v1.0.0-beta",
+	"developer": "EESports",
+	"description": "Advanced Player Trajectory Viewer",
+	"dependencies": {
+		"geode.node-ids": ">=v1.20.0"
+	},
+	"settings": {
+		"enable-trajectory": {
+			"type": "bool",
+			"name": "Activate Trajectory",
+			"default": false
+		},
+
+		"line-color-title": {
+			"type": "title",
+			"name": "Line Color Settings"
+		},
+		"holding-color": {
+			"type": "rgb",
+			"name": "Holding Trajectory Color",
+			"default": "#00FF00"
+		},
+		"release-color": {
+			"type": "rgb",
+			"name": "Release Trajectory Color",
+			"default": "#00FFFF"
+		},
+		"mixed-color": {
+			"type": "rgb",
+			"name": "Mixed Trajectory Color",
+			"default": "#FFFF00"
+		},
+
+		"hitbox-color-title": {
+			"type": "title",
+			"name": "Hitbox Color Settings"
+		},
+		"inner-hitbox-color": {
+			"type": "rgb",
+			"name": "Player Inner Hitbox Color",
+			"default": "#0000FF"
+		},
+		"outer-hitbox-color": {
+			"type": "rgb",
+			"name": "Player Outer Hitbox Color",
+			"default": "#FF0000"
+		},
+		"rotated-hitbox-color": {
+			"type": "rgb",
+			"name": "Player Rotated Hitbox Color",
+			"default": "#7F0000"
+		},
+		"circle-hitbox-color": {
+			"type": "rgb",
+			"name": "Player Circle Hitbox Color",
+			"default": "#FF0000"
+		},
+
+		"misc-title": {
+			"type": "title",
+			"name": "Miscellaneous Settings"
+		},
+		"lookahead-length": {
+			"type": "int",
+			"name": "Lookahead Length",
+			"default": 360,
+			"min": 1,
+			"control": {
+				"arrows": false
+			}
+		},
+		"line-thickness": {
+			"type": "float",
+			"name": "Line Thickness",
+			"default": 0.3,
+			"min": 0.01,
+			"max": 5.00,
+			"control": {
+				"slider": true,
+				"slider-step": 0.1,
+				"arrow-step": 0.05
+			}
+		}
+	}
+}

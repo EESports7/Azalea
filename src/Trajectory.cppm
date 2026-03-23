@@ -1,0 +1,126 @@
+module;
+
+#include "include.hpp"
+
+export module Trajectory;
+
+import boost.unordered;
+using namespace boost::unordered;
+
+struct TrajectoryDrawNode : public CCDrawNode {
+    static TrajectoryDrawNode* create(){
+        auto ret = new TrajectoryDrawNode();
+        if(ret->init()){
+            ret->autorelease();
+            return ret;
+        }
+
+        delete ret;
+        return nullptr;
+    }
+};
+
+enum class SpeedPortal {
+    Slow = 200,
+    Normal = 201,
+    Fast = 202,
+    Faster = 203,
+    Fastest = 1334
+};
+
+enum class TriggerID {
+    SlowSpeed = 200,
+    NormalSpeed = 201,
+    FastSpeed = 202,
+    FasterSpeed = 203,
+    FastestSpeed = 1334,
+
+    Arrow = 2900,
+    End = 1931,
+    Gravity = 2066,
+    Options = 2899,
+    PlayerControl = 1932,
+    Reverse = 1917,
+    Teleport = 3022,
+    Timewarp = 1935,
+};
+
+struct Hitboxes {
+    std::array<CCPoint, 4> outerHitbox, innerHitbox, rotatedHitbox;
+};
+
+export struct TrajectoryManager {
+    static auto& get(){
+        static TrajectoryManager i;
+        return i;
+    }
+
+    static CCDrawNode* getTrajectoryNode(){
+        static TrajectoryDrawNode* i = nullptr;
+        if(!i){
+            i = TrajectoryDrawNode::create();
+            i->retain();
+            i->setBlendFunc({GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA});
+        }
+        return i;
+    }
+
+    static void cleanup() {
+        auto& tm = get();
+
+        if(tm.getTrajectoryNode()) tm.getTrajectoryNode()->clear();
+
+        tm.player1 = nullptr;
+        tm.player2 = nullptr;
+    }
+
+    int playerIndex(PlayerObject* pl) const {
+        return (pl == player1) ? 1 : 2;
+    }
+
+    PlayLayer* playLayer;
+
+    PlayerObject *player1, *player2;
+    float p1Rotation, p2Rotation;
+    unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
+    std::vector<CCPoint> p1TrajectoryPoints, p2TrajectoryPoints;
+
+    float lineThickness;
+    uint64_t lookaheadLength;
+
+    bool endTrajectory;
+    bool trajectoryActive;
+    bool isDuel;
+    bool isGravityUnlinked;
+    int startingChannel;
+    unordered_flat_map<int, int> channelIndex;
+
+    bool renderCircleHitbox;
+    float delta = 1/240.f;
+
+    void startTrajectory();
+    void updateTrajectory(bool down);
+
+    void handleOrb(PlayerObject* pl, RingObject* obj);
+    void handlePortal(PlayerObject* pl, EffectGameObject* obj);
+    void handleTrigger(PlayerObject* pl, EffectGameObject* obj);
+    void handlePad(PlayerObject* pl, EffectGameObject* obj);
+
+    bool canBeActivated(PlayerObject* pl, EffectGameObject* obj);
+    void flipGravity(PlayerObject* pl, bool flip);
+
+    void setupManager();
+    void setupPlayers(bool down);
+    void resetGJBGL();
+
+    Hitboxes getHitboxVert(PlayerObject* pl, float angle);
+    void renderDeath();
+
+    TrajectoryManager(const TrajectoryManager&) = delete;
+    TrajectoryManager& operator=(const TrajectoryManager&) = delete;
+    TrajectoryManager(TrajectoryManager&&) = delete;
+    TrajectoryManager& operator=(TrajectoryManager&&) = delete;
+
+private:
+    TrajectoryManager() = default;
+};
