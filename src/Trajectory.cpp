@@ -127,7 +127,7 @@ class $modify(GJBaseGameLayer){
                 )
             );
 
-            if(!triggers) CCArray::create();
+            if(!triggers) triggers = CCArray::create();
 
             auto& idx = tm.channelIndex[pl->m_gameState.m_currentChannel];
             auto reverse = pl->m_gameState.m_spawnChannelRelated1[pl->m_gameState.m_currentChannel];
