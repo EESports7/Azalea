@@ -20,15 +20,7 @@ struct TrajectoryDrawNode : public CCDrawNode {
     }
 };
 
-enum class SpeedPortal {
-    Slow = 200,
-    Normal = 201,
-    Fast = 202,
-    Faster = 203,
-    Fastest = 1334
-};
-
-enum class TriggerID {
+enum class TriggerID { // add camera triggers
     SlowSpeed = 200,
     NormalSpeed = 201,
     FastSpeed = 202,
@@ -65,7 +57,7 @@ export struct TrajectoryManager {
         return i;
     }
 
-    static void cleanup() {
+    static void cleanup(){
         auto& tm = get();
 
         if(tm.getTrajectoryNode()) tm.getTrajectoryNode()->clear();
@@ -78,24 +70,27 @@ export struct TrajectoryManager {
         return (pl == player1) ? 1 : 2;
     }
 
-    PlayLayer* playLayer;
+    PlayLayer* playLayer = nullptr;
 
-    PlayerObject *player1, *player2;
-    float p1Rotation, p2Rotation;
-    unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
+    PlayerObject *player1 = nullptr, *player2 = nullptr;
+    float p1Rotation{}, p2Rotation{};
     std::vector<CCPoint> p1TrajectoryPoints, p2TrajectoryPoints;
 
-    float lineThickness;
-    uint64_t lookaheadLength;
+    bool useTrajectory{};
 
-    bool endTrajectory;
-    bool trajectoryActive;
-    bool isDuel;
-    bool isGravityUnlinked;
-    int startingChannel;
-    unordered_flat_map<int, int> channelIndex;
+    float lineThickness{};
+    uint64_t lookaheadLength{};
 
-    bool renderCircleHitbox;
+    bool endTrajectory{};
+    bool trajectoryActive{};
+
+    bool isDuel{};
+    bool isGravityUnlinked{};
+    int startingChannel{};
+    unordered_flat_map<int, int> channelIndex{};
+    unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
+
+    bool renderCircleHitbox{};
     float delta = 1/240.f;
 
     void startTrajectory();

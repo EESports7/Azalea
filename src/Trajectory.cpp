@@ -14,12 +14,19 @@ import PlayerUtil;
 import ColorManager;
 
 auto& tm = TrajectoryManager::get();
-// todo: hook playerTouchedTrigger and get this thing working
+// todo: get this thing working
 class $modify(PlayLayer){
     void setupHasCompleted(){
+        auto mod = Mod::get();
+
         PlayLayer::setupHasCompleted();
 
+        tm.useTrajectory = mod->getSettingValue<bool>("enable-trajectory");
+
         ColorManager::get().loadColors();
+
+        tm.lineThickness = mod->getSettingValue<double>("line-thickness");
+        tm.lookaheadLength = mod->getSettingValue<int64_t>("lookahead-length");
 
         tm.playLayer = this;
 
@@ -95,7 +102,11 @@ class $modify(PlayerObject){
 class $modify(GJBaseGameLayer){
     void update(float dt) override {
 
-        // if(m_started && m_resumeTimer < 1)
+        if(m_started && m_resumeTimer <= 0 && tm.useTrajectory){
+            tm.delta = dt;
+            tm.startTrajectory();
+        }
+
         GJBaseGameLayer::update(dt);
     }
 
@@ -720,6 +731,9 @@ void TrajectoryManager::setupManager(){
     auto& gs = playLayer->m_gameState;
     auto em = playLayer->m_effectManager;
 
+    isDuel = playLayer->m_player2 != nullptr;
+    isGravityUnlinked = gs.m_unkBool31;
+
     for(auto key : gs.m_activatedObjectIDs | std::views::keys)
         activatedObjects.insert(key);
 
@@ -743,6 +757,13 @@ void TrajectoryManager::setupPlayers(bool down){
     if(p2)
         if(p2->m_holdingButtons[std::to_underlying(PlayerButton::Jump)] != down)
             down ? player1->pushButton(PlayerButton::Jump) : player1->releaseButton(PlayerButton::Jump);
+}
+
+void TrajectoryManager::resetGJBGL(){
+    auto& gs = playLayer->m_gameState;
+    auto em = playLayer->m_effectManager;
+
+    gs.m_currentChannel = startingChannel;
 }
 
 Hitboxes TrajectoryManager::getHitboxVert(PlayerObject* pl, float angle){

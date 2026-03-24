@@ -60,22 +60,14 @@ public:
 
     ccColor4F getColor(ColorIdx idx){
         switch(idx){
-            case ColorIdx::Holding:
-                return ccc4FFromccc3B(Holding);
-            case ColorIdx::Release:
-                return ccc4FFromccc3B(Release);
-            case ColorIdx::Mixed:
-                return ccc4FFromccc3B(Mixed);
-            case ColorIdx::InnerHitbox:
-                return ccc4FFromccc3B(InnerHitbox);
-            case ColorIdx::OuterHitbox:
-                return ccc4FFromccc3B(OuterHitbox);
-            case ColorIdx::RotatedHitbox:
-                return ccc4FFromccc3B(RotatedHitbox);
-            case ColorIdx::CircleHitbox:
-                return ccc4FFromccc3B(CircleHitbox);
-            default:
-                return ccc4f(0, 0, 0, 0);
+            case ColorIdx::Holding:       return ccc4FFromccc3B(Holding);
+            case ColorIdx::Release:       return ccc4FFromccc3B(Release);
+            case ColorIdx::Mixed:         return ccc4FFromccc3B(Mixed);
+            case ColorIdx::InnerHitbox:   return ccc4FFromccc3B(InnerHitbox);
+            case ColorIdx::OuterHitbox:   return ccc4FFromccc3B(OuterHitbox);
+            case ColorIdx::RotatedHitbox: return ccc4FFromccc3B(RotatedHitbox);
+            case ColorIdx::CircleHitbox:  return ccc4FFromccc3B(CircleHitbox);
+            default:                      return ccc4f(0, 0, 0, 0);
         }
     }
 };
