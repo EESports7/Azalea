@@ -14,7 +14,13 @@ import PlayerUtil;
 import ColorManager;
 
 auto& tm = TrajectoryManager::get();
-// todo: get this thing working
+// todo: (most to least important/easiest)
+// implement m_speedObjects stuff
+// get PlayLayer using the getter
+// hook the functions with the handles and get delta
+// investigate m_rotateChannel and m_currentChannel
+// investigate variables affected by camera (make struct)
+// get this thing working ( finish startTrajectory() )
 class $modify(PlayLayer){
     void setupHasCompleted(){
         auto mod = Mod::get();
@@ -95,26 +101,22 @@ class $modify(TrajectoryGameObject, EffectGameObject){
     }
 };
 
-class $modify(PlayerObject){
+// class $modify(PlayerObject){
 
-};
+// };
 
 class $modify(GJBaseGameLayer){
     void update(float dt) override {
-
-        if(m_started && m_resumeTimer <= 0 && tm.useTrajectory){
-            tm.delta = dt;
+        if(m_started && m_resumeTimer <= 0 && tm.useTrajectory)
             tm.startTrajectory();
-        }
+
 
         GJBaseGameLayer::update(dt);
     }
 
     void checkSpawnObjects(){
-        if(!tm.trajectoryActive){
-            GJBaseGameLayer::checkSpawnObjects();
-            return;
-        }
+        if(!tm.trajectoryActive)
+            return GJBaseGameLayer::checkSpawnObjects();
 
         auto pl = tm.playLayer;
 
@@ -140,7 +142,7 @@ class $modify(GJBaseGameLayer){
 
             if(!triggers) triggers = CCArray::create();
 
-            auto& idx = tm.channelIndex[pl->m_gameState.m_currentChannel];
+            auto& idx = tm.currState.channelIndex[pl->m_gameState.m_currentChannel];
             auto reverse = pl->m_gameState.m_spawnChannelRelated1[pl->m_gameState.m_currentChannel];
 
             if(idx >= triggers->count()) break;
@@ -181,23 +183,22 @@ class $modify(GJBaseGameLayer){
     }
 
     void playerTouchedTrigger(PlayerObject* pl, EffectGameObject* obj){
-        if(!tm.trajectoryActive){
-            GJBaseGameLayer::playerTouchedTrigger(pl, obj);
-            return;
-        }
+        if(!tm.trajectoryActive)
+            return GJBaseGameLayer::playerTouchedTrigger(pl, obj);
 
         if(!obj->m_isTouchTriggered) return;
 
         std::pair key{obj->m_uniqueID, tm.playerIndex(pl)};
-        if(!tm.activatedObjects.contains(key)){
+        if(!tm.currState.activatedObjects.contains(key)){
             if(obj->m_isMultiTriggered)
-                tm.activatedTriggers.erase(key);
+                tm.currState.activatedTriggers.erase(key);
 
-            tm.activatedObjects.emplace(key);
-        }else if(obj->m_isMultiTriggered) tm.activatedTriggers.erase(key);
+            tm.currState.activatedObjects.emplace(key);
+        }else if(obj->m_isMultiTriggered)
+            tm.currState.activatedTriggers.erase(key);
 
-        if(!tm.activatedTriggers.contains(key)){
-            tm.activatedTriggers.emplace(key);
+        if(!tm.currState.activatedTriggers.contains(key)){
+            tm.currState.activatedTriggers.emplace(key);
 
             tm.handleTrigger(pl, obj);
 
@@ -210,7 +211,19 @@ class $modify(GJBaseGameLayer){
 
 
 void TrajectoryManager::startTrajectory(){
+    setupManager();
 
+    // release
+    reloadManager(false);
+    setupPlayers(false);
+    updateTrajectory(false);
+
+    // click
+    reloadManager(true);
+    setupPlayers(true);
+    updateTrajectory(true);
+
+    resetGJBGL();
 }
 
 void TrajectoryManager::updateTrajectory(bool down){
@@ -243,36 +256,36 @@ void TrajectoryManager::updateTrajectory(bool down){
         player2->m_totalTime += delta;
 
         player1->resetTouchedRings(false);
-        if(isDuel)
+        if(currState.isDuel)
             player2->resetTouchedRings(false);
 
         player1->resetCollisionLog(false);
-        if(isDuel)
+        if(currState.isDuel)
             player2->resetCollisionLog(false);
 
         player1->updateInternalActions(delta);
-        if(isDuel) player2->updateInternalActions(delta);
+        if(currState.isDuel) player2->updateInternalActions(delta);
 
         player1->update(deltaSec);
         playLayer->checkCollisions(player1, deltaSec, false);
         player1->updateSpecial(delta);
 
-        if(isDuel){
+        if(currState.isDuel){
             player2->update(deltaSec);
             playLayer->checkCollisions(player2, deltaSec, false);
             player2->updateSpecial(delta);
         }
 
         player1->updateRotation(deltaSec);
-        if(isDuel) player2->updateRotation(deltaSec);
+        if(currState.isDuel) player2->updateRotation(deltaSec);
 
         player1->m_shipRotation = player1->getPosition();
-        if(isDuel) player2->m_shipRotation = player2->getPosition();
+        if(currState.isDuel) player2->m_shipRotation = player2->getPosition();
 
         if(!down && (p1TrajectoryPoints[i] == prevPosP1))
             p1Color = cm.getColor(ColorIdx::Mixed);
 
-        if(!down && isDuel && (p2TrajectoryPoints[i] == prevPosP2))
+        if(!down && currState.isDuel && (p2TrajectoryPoints[i] == prevPosP2))
             p2Color = cm.getColor(ColorIdx::Mixed);
 
         node->drawSegment(prevPosP1,
@@ -281,7 +294,7 @@ void TrajectoryManager::updateTrajectory(bool down){
             p1Color
         );
 
-        if(isDuel)
+        if(currState.isDuel)
             node->drawSegment(prevPosP2,
                 player2->getPosition(),
                 lineThickness,
@@ -292,7 +305,7 @@ void TrajectoryManager::updateTrajectory(bool down){
             p1Rotation = player1->getRotation();
             player1->updatePlayerScale();
 
-            if(isDuel){
+            if(currState.isDuel){
                 p2Rotation = player2->getRotation();
                 player2->updatePlayerScale();
             }
@@ -304,6 +317,7 @@ void TrajectoryManager::updateTrajectory(bool down){
     trajectoryActive = false;
 }
 
+// modify_cast maybe
 void TrajectoryManager::handleOrb(PlayerObject* pl, RingObject* obj){
     auto objTGO = static_cast<TrajectoryGameObject*>(static_cast<EffectGameObject*>(obj));
 
@@ -555,7 +569,7 @@ void TrajectoryManager::handleTrigger(PlayerObject* pl, EffectGameObject* obj){
             break;
         case TriggerID::Reverse:
             player1->reversePlayer(nullptr);
-            if(isDuel) player2->reversePlayer(nullptr);
+            if(currState.isDuel) player2->reversePlayer(nullptr);
             break;
         case TriggerID::Gravity:
             if(obj->m_followCPP){
@@ -607,7 +621,7 @@ void TrajectoryManager::handleTrigger(PlayerObject* pl, EffectGameObject* obj){
             }
 
             if(isSet(tgr->m_unlinkDualGravity))
-                isGravityUnlinked = isOn(tgr->m_unlinkDualGravity);
+                currState.isGravityUnlinked = isOn(tgr->m_unlinkDualGravity);
 
             if(isSet(tgr->m_disableP1Controls)){
                 if(isOn(tgr->m_disableP1Controls))
@@ -646,7 +660,7 @@ void TrajectoryManager::handleTrigger(PlayerObject* pl, EffectGameObject* obj){
                 };
 
                 changeDirection(player1);
-                if(isDuel) changeDirection(player2);
+                if(currState.isDuel) changeDirection(player2);
             }
         } break;
     }
@@ -693,10 +707,10 @@ void TrajectoryManager::handlePad(PlayerObject* pl, EffectGameObject* obj){
 }
 
 bool TrajectoryManager::canBeActivated(PlayerObject* pl, EffectGameObject* obj){
-    bool wasTouching = activatedObjects.contains({obj->m_uniqueID, playerIndex(pl)});
+    bool wasTouching = currState.activatedObjects.contains({obj->m_uniqueID, playerIndex(pl)});
     bool multiActivate = obj->canMultiActivate(pl->m_isPlatformer);
 
-    activatedObjects.emplace(obj->m_uniqueID, playerIndex(pl));
+    currState.activatedObjects.emplace(obj->m_uniqueID, playerIndex(pl));
 
     if(multiActivate) return !wasTouching;
 
@@ -711,7 +725,7 @@ void TrajectoryManager::flipGravity(PlayerObject* pl, bool flip){
 
     pl->flipGravity(flip, true);
 
-    if(isGravityUnlinked || !isDuel ||
+    if(currState.isGravityUnlinked || !currState.isDuel ||
         playLayer->m_levelSettings->m_twoPlayerMode) return;
 
     bool sameMode =
@@ -731,16 +745,23 @@ void TrajectoryManager::setupManager(){
     auto& gs = playLayer->m_gameState;
     auto em = playLayer->m_effectManager;
 
-    isDuel = playLayer->m_player2 != nullptr;
-    isGravityUnlinked = gs.m_unkBool31;
+    refState.isDuel = playLayer->m_player2 != nullptr;
+    refState.isGravityUnlinked = gs.m_unkBool31;
 
     for(auto key : gs.m_activatedObjectIDs | std::views::keys)
-        activatedObjects.insert(key);
+        refState.activatedObjects.insert(key);
 
-    activatedTriggers.insert(em->m_unkMap498.begin(), em->m_unkMap498.end());
+    refState.activatedTriggers.insert(em->m_unkMap498.begin(), em->m_unkMap498.end());
+
+    refState.speedPortals = playLayer->m_speedObjects->asExt().toVector<EffectGameObject*>();
 
     startingChannel = gs.m_currentChannel;
-    channelIndex.insert(gs.m_spawnChannelRelated0.begin(), gs.m_spawnChannelRelated0.end());
+    refState.channelIndex.insert(gs.m_spawnChannelRelated0.begin(), gs.m_spawnChannelRelated0.end());
+}
+
+void TrajectoryManager::reloadManager(bool move){
+    if(move) currState = std::move(refState);
+    else     currState = refState;
 }
 
 void TrajectoryManager::setupPlayers(bool down){
@@ -748,13 +769,13 @@ void TrajectoryManager::setupPlayers(bool down){
     auto p2 = playLayer->m_player2;
 
     copyPlayer(player1, p1);
-    if(p2) copyPlayer(player2, p2);
+    if(currState.isDuel) copyPlayer(player2, p2);
 
     // only do action if it wasn't done
     if(p1->m_holdingButtons[std::to_underlying(PlayerButton::Jump)] != down)
         down ? player1->pushButton(PlayerButton::Jump) : player1->releaseButton(PlayerButton::Jump);
 
-    if(p2)
+    if(currState.isDuel)
         if(p2->m_holdingButtons[std::to_underlying(PlayerButton::Jump)] != down)
             down ? player1->pushButton(PlayerButton::Jump) : player1->releaseButton(PlayerButton::Jump);
 }
@@ -837,7 +858,7 @@ void TrajectoryManager::renderDeath(){
         BorderAlignment::Inside
     );
 
-    if(!isDuel) return;
+    if(!currState.isDuel) return;
 
     auto verticesP2 = getHitboxVert(player2, p2Rotation);
     node->drawPolygon(verticesP2.rotatedHitbox.data(),

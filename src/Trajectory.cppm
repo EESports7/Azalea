@@ -41,6 +41,14 @@ struct Hitboxes {
     std::array<CCPoint, 4> outerHitbox, innerHitbox, rotatedHitbox;
 };
 
+struct TrajectoryState {
+    unordered_flat_map<int, int> channelIndex;
+    unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
+    std::vector<EffectGameObject*> speedPortals;
+    bool isGravityUnlinked{};
+    bool isDuel{};
+};
+
 export struct TrajectoryManager {
     static auto& get(){
         static TrajectoryManager i;
@@ -84,11 +92,10 @@ export struct TrajectoryManager {
     bool endTrajectory{};
     bool trajectoryActive{};
 
-    bool isDuel{};
-    bool isGravityUnlinked{};
+    TrajectoryState refState;
+    TrajectoryState currState;
+
     int startingChannel{};
-    unordered_flat_map<int, int> channelIndex{};
-    unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
 
     bool renderCircleHitbox{};
     float delta = 1/240.f;
@@ -105,6 +112,7 @@ export struct TrajectoryManager {
     void flipGravity(PlayerObject* pl, bool flip);
 
     void setupManager();
+    void reloadManager(bool move);
     void setupPlayers(bool down);
     void resetGJBGL();
 
