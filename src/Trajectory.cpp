@@ -753,7 +753,7 @@ void TrajectoryManager::setupManager(){
 
     refState.activatedTriggers.insert(em->m_unkMap498.begin(), em->m_unkMap498.end());
 
-    refState.speedPortals = playLayer->m_speedObjects->asExt().toVector<EffectGameObject*>();
+    refState.speedPortals = CCArray::createWithArray(playLayer->m_speedObjects);
 
     startingChannel = gs.m_currentChannel;
     refState.channelIndex.insert(gs.m_spawnChannelRelated0.begin(), gs.m_spawnChannelRelated0.end());

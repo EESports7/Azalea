@@ -44,7 +44,7 @@ struct Hitboxes {
 struct TrajectoryState {
     unordered_flat_map<int, int> channelIndex;
     unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
-    std::vector<EffectGameObject*> speedPortals;
+    CCArray* speedPortals;
     bool isGravityUnlinked{};
     bool isDuel{};
 };
