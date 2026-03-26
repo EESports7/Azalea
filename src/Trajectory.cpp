@@ -15,6 +15,7 @@ import ColorManager;
 
 auto& tm = TrajectoryManager::get();
 // todo: (most to least important/easiest)
+// properly copy the CCArray
 // implement m_speedObjects stuff
 // get PlayLayer using the getter
 // hook the functions with the handles and get delta
