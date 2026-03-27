@@ -15,13 +15,14 @@ import ColorManager;
 
 auto& tm = TrajectoryManager::get();
 // todo: (most to least important/easiest)
-// properly copy the CCArray
+// use std::pair to store a ref of the fields
+// reset activated object states (TrajectoryGameObject)
 // implement m_speedObjects stuff
-// get PlayLayer using the getter
+// re the teleport function
 // hook the functions with the handles and get delta
 // investigate m_rotateChannel and m_currentChannel
 // investigate variables affected by camera (make struct)
-// get this thing working ( finish startTrajectory() )
+// get this thing working
 class $modify(PlayLayer){
     void setupHasCompleted(){
         auto mod = Mod::get();
@@ -35,7 +36,7 @@ class $modify(PlayLayer){
         tm.lineThickness = mod->getSettingValue<double>("line-thickness");
         tm.lookaheadLength = mod->getSettingValue<int64_t>("lookahead-length");
 
-        tm.playLayer = this;
+        tm.playLayer = PlayLayer::get();
 
         tm.renderCircleHitbox = m_levelSettings->m_fixRadiusCollision;
 
@@ -86,6 +87,8 @@ class $modify(PauseLayer){
 
 class $modify(TrajectoryGameObject, EffectGameObject){
     struct Fields{
+        bool hasBeenReset{};
+
         bool m_activated;
         bool m_activatedByPlayer1;
         bool m_activatedByPlayer2;
@@ -100,6 +103,35 @@ class $modify(TrajectoryGameObject, EffectGameObject){
             else fields->m_activatedByPlayer2 = true;
         }
     }
+
+    void resetTrajectoryState(){
+        auto fields = m_fields.self();
+
+        fields->hasBeenReset = true;
+
+        fields->m_activated = m_activated;
+        fields->m_activatedByPlayer1 = m_activatedByPlayer1;
+        fields->m_activatedByPlayer2 = m_activatedByPlayer2;
+    }
+
+    void editTrajectoryState(Activate setting, bool state){
+        auto fields = m_fields.self();
+
+        tm.tamperedObjects.emplace(this);
+
+        fields->hasBeenReset = false;
+        switch(setting){
+            case Activate::General:
+                fields->m_activated = state;
+                break;
+            case Activate::Player1:
+                fields->m_activatedByPlayer1 = state;
+                break;
+            case Activate::Player2:
+                fields->m_activatedByPlayer2 = state;
+                break;
+        }
+    }
 };
 
 // class $modify(PlayerObject){
@@ -110,7 +142,6 @@ class $modify(GJBaseGameLayer){
     void update(float dt) override {
         if(m_started && m_resumeTimer <= 0 && tm.useTrajectory)
             tm.startTrajectory();
-
 
         GJBaseGameLayer::update(dt);
     }
@@ -125,7 +156,7 @@ class $modify(GJBaseGameLayer){
         if(tm.player1->m_isPlatformer){
             playerPos = LevelTools::posForTime(
                 static_cast<float>(pl->m_gameState.m_levelTime),
-                pl->m_speedObjects,
+                tm.currState.speedPortals,
                 static_cast<int>(pl->m_levelSettings->m_startSpeed),
                 true,
                 pl->m_gameState.m_rotateChannel // should be fine
@@ -149,11 +180,10 @@ class $modify(GJBaseGameLayer){
             if(idx >= triggers->count()) break;
 
             auto obj = static_cast<TrajectoryGameObject*>(triggers->objectAtIndex(idx));
-            auto fields = obj->m_fields.self();
 
             bool skip = false;
             if(obj->m_isTouchTriggered){
-                if(!fields->m_activated) break;
+                if(!obj->m_fields->m_activated) break;
                 skip = true;
             }else{
                 auto objPos = obj->getPosition();
@@ -203,9 +233,9 @@ class $modify(GJBaseGameLayer){
 
             tm.handleTrigger(pl, obj);
 
-            auto& fields = static_cast<TrajectoryGameObject*>(obj)->m_fields;
-            fields->m_activatedByPlayer1 = true;
-            fields->m_activatedByPlayer2 = true;
+            auto tgObj = static_cast<TrajectoryGameObject*>(obj);
+            tgObj->editTrajectoryState(Activate::Player1, true);
+            tgObj->editTrajectoryState(Activate::Player2, true);
         }
     }
 };
@@ -537,36 +567,51 @@ void TrajectoryManager::handlePortal(PlayerObject* pl, EffectGameObject* obj){
 }
 
 void TrajectoryManager::handleTrigger(PlayerObject* pl, EffectGameObject* obj){
+    auto addToSpeedArray = [this](EffectGameObject * o){
+        if(!currState.speedPortals.data()->containsObject(o))
+            currState.speedPortals.data()->addObject(o);
+    };
+
     switch(static_cast<TriggerID>(obj->m_objectID)){
         case TriggerID::SlowSpeed:
             pl->m_playerSpeed = 0.7f;
             pl->m_yStart = 10.620032f;
             pl->m_gravity = 0.940199f;
             pl->m_speedMultiplier = 5.980002f;
+
+            addToSpeedArray(obj);
             break;
         case TriggerID::NormalSpeed:
             pl->m_playerSpeed = 0.9f;
             pl->m_yStart = 11.1800318f;
             pl->m_gravity = 0.958199024f;
             pl->m_speedMultiplier = 5.77000189f;
+
+            addToSpeedArray(obj);
             break;
         case TriggerID::FastSpeed:
             pl->m_playerSpeed = 1.1f;
             pl->m_yStart = 11.420032f;
             pl->m_gravity = 0.957199f;
             pl->m_speedMultiplier = 5.870002f;
+
+            addToSpeedArray(obj);
             break;
         case TriggerID::FasterSpeed:
             pl->m_playerSpeed = 1.3f;
             pl->m_yStart = 11.230032f;
             pl->m_gravity = 0.961199f;
             pl->m_speedMultiplier = 6.000002f;
+
+            addToSpeedArray(obj);
             break;
         case TriggerID::FastestSpeed:
             pl->m_playerSpeed = 1.6f;
             pl->m_yStart = 11.230032f;
             pl->m_gravity = 0.961199f;
             pl->m_speedMultiplier = 6.000002f;
+
+            addToSpeedArray(obj);
             break;
         case TriggerID::Reverse:
             player1->reversePlayer(nullptr);
@@ -715,7 +760,7 @@ bool TrajectoryManager::canBeActivated(PlayerObject* pl, EffectGameObject* obj){
 
     if(multiActivate) return !wasTouching;
 
-    auto& fields = static_cast<TrajectoryGameObject*>(obj)->m_fields;
+    auto fields = static_cast<TrajectoryGameObject*>(obj)->m_fields.self();
     return (playerIndex(pl) != 1) ?
         fields->m_activatedByPlayer1 :
         fields->m_activatedByPlayer2;
@@ -761,8 +806,18 @@ void TrajectoryManager::setupManager(){
 }
 
 void TrajectoryManager::reloadManager(bool move){
-    if(move) currState = std::move(refState);
-    else     currState = refState;
+    if(move){
+        currState = std::move(refState);
+    }else{
+        currState = refState;
+        currState.speedPortals.swap(CCArray::createWithArray(refState.speedPortals.data()));
+    }
+
+    for(TrajectoryGameObject* i : tamperedObjects){
+        if(!i->m_fields->hasBeenReset) i.resetTrajectoryState();
+    }
+
+    tamperedObjects.clear();
 }
 
 void TrajectoryManager::setupPlayers(bool down){

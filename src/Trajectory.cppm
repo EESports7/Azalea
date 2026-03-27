@@ -34,8 +34,14 @@ enum class TriggerID { // add camera triggers
     PlayerControl = 1932,
     Reverse = 1917,
     Teleport = 3022,
-    Timewarp = 1935,
+    Timewarp = 1935
 };
+
+enum class Activate {
+    General,
+    Player1,
+    Player2
+}
 
 struct Hitboxes {
     std::array<CCPoint, 4> outerHitbox, innerHitbox, rotatedHitbox;
@@ -44,7 +50,7 @@ struct Hitboxes {
 struct TrajectoryState {
     unordered_flat_map<int, int> channelIndex;
     unordered_flat_set<std::pair<int, int>> activatedObjects, activatedTriggers;
-    CCArray* speedPortals;
+    Ref<CCArray> speedPortals = nullptr;
     bool isGravityUnlinked{};
     bool isDuel{};
 };
@@ -94,6 +100,8 @@ export struct TrajectoryManager {
 
     TrajectoryState refState;
     TrajectoryState currState;
+
+    unordered_flat_set<TrajectoryGameObject*> tamperedObjects;
 
     int startingChannel{};
 
