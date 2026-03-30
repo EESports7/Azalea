@@ -4,8 +4,12 @@ module;
 
 export module Trajectory;
 
+export import ColorManager;
+
 import boost.unordered;
 using namespace boost::unordered;
+
+export {
 
 struct TrajectoryDrawNode : public CCDrawNode {
     static TrajectoryDrawNode* create(){
@@ -41,7 +45,7 @@ enum class Activate {
     General,
     Player1,
     Player2
-}
+};
 
 struct Hitboxes {
     std::array<CCPoint, 4> outerHitbox, innerHitbox, rotatedHitbox;
@@ -55,7 +59,23 @@ struct TrajectoryState {
     bool isDuel{};
 };
 
-export struct TrajectoryManager {
+class $modify(TrajectoryGameObject, EffectGameObject){
+    struct Fields{
+        bool hasBeenReset{};
+
+        bool m_activated;
+        bool m_activatedByPlayer1;
+        bool m_activatedByPlayer2;
+    };
+
+    void activatedByTrajectory(PlayerObject* pl, int idx);
+    void resetTrajectoryState();
+    void editTrajectoryState(Activate setting, bool state);
+};
+
+struct TrajectoryManager {
+    using TrajectoryObjField = TrajectoryGameObject::Fields;
+
     static auto& get(){
         static TrajectoryManager i;
         return i;
@@ -78,6 +98,26 @@ export struct TrajectoryManager {
 
         tm.player1 = nullptr;
         tm.player2 = nullptr;
+
+        tm.effectObjects.clear();
+    }
+
+    TrajectoryObjField* getFields(TrajectoryGameObject* obj){
+        if(effectObjects.contains(obj))
+            return effectObjects[obj];
+
+        auto fields = obj->m_fields.self();
+        effectObjects.emplace(obj, fields);
+        return fields;
+    }
+    TrajectoryObjField* getFields(EffectGameObject* obj){
+        auto ptr = static_cast<TrajectoryGameObject*>(obj);
+        if(effectObjects.contains(ptr))
+            return effectObjects[ptr];
+
+        auto fields = ptr->m_fields.self();
+        effectObjects.emplace(ptr, fields);
+        return fields;
     }
 
     int playerIndex(PlayerObject* pl) const {
@@ -101,7 +141,7 @@ export struct TrajectoryManager {
     TrajectoryState refState;
     TrajectoryState currState;
 
-    unordered_flat_set<TrajectoryGameObject*> tamperedObjects;
+    unordered_flat_map<TrajectoryGameObject*, TrajectoryObjField*> effectObjects;
 
     int startingChannel{};
 
@@ -135,3 +175,7 @@ export struct TrajectoryManager {
 private:
     TrajectoryManager() = default;
 };
+
+constinit auto& tm = TrajectoryManager::get();
+
+}
